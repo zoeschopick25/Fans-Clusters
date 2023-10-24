@@ -1,0 +1,301 @@
+---
+title: "WP5"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "2022-12-02"
+---
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(reshape2)
+library(tidyr)
+```
+
+```{r, echo=FALSE}
+fans <- read.csv("/Users/zoeschopick/Fans on Mars.csv")
+
+fans2 <- fans %>% select(apex.longitude..decimal.degrees.,apex.latitude..decimal.degrees., radius..meters.,average.radial.slope..degrees.,radial.profile.shape  ) %>% na.omit()
+
+fans3 <- fans2 %>% select(-radial.profile.shape)
+
+kfans <- kmeans(fans3, centers = 4)
+
+fans2$Kcluster <- kfans$cluster
+```
+\newpage
+**Fans on Mars**
+
+
+```{r, echo=FALSE}
+p6 <- ggplot(fans2, aes(x = average.radial.slope..degrees., y = radius..meters., shape = as.factor(Kcluster), col = radial.profile.shape))+
+  geom_point() +
+  labs(x = "Radial Slope (degrees)", y = "Radius (m)") +
+  theme_bw()+
+ theme(legend.position = "top", text = element_text(size = 12), legend.text = element_text(size = 10), legend.title = element_text(size = 10), legend.spacing.x = unit(0.01, "cm"), legend.justification  = c(0,0)) +
+  scale_color_manual(values = c("deeppink", "darkgoldenrod1", "cornflowerblue", "darkgreen"), name = "Profile Shape") +
+  scale_shape_manual(values = c(15,16,17,3), name = "Cluster") + 
+  guides(col = "none") + annotate(geom = 'text', label = 'A ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+
+
+p4 <- ggplot(fans2, aes(x = apex.latitude..decimal.degrees. , y = radius..meters., shape = as.factor(Kcluster), col = radial.profile.shape))+
+  geom_point()+
+  theme_bw() +
+  labs(x = "Latitude", y = "Radius (m)")+
+  theme(legend.position = "top", text = element_text(size = 12), legend.text = element_text(size = 10), legend.title = element_text(size = 10), legend.spacing.x = unit(0.01, "cm"), legend.justification  = c(1,0))+
+  scale_color_manual(values = c("deeppink", "darkgoldenrod1", "cornflowerblue", "darkgreen"), name = "Profile Shape") +
+  scale_shape_manual(values = c(15,16,17,3), name = "Cluster") +
+  guides(shape = "none") + annotate(geom = 'text', label = 'B ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+```
+```{r, echo=FALSE}
+
+d1 <- ggplot(fans2, aes(x =  radius..meters., group= as.factor(Kcluster)))+
+        geom_density( alpha = 0.5, fill = "grey")+
+        theme_bw()+
+    labs(x = "Radius (m)", y = "Density") +
+  theme(text = element_text(size = 12)) + annotate(geom = 'text', label = 'C ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -5, size =10)
+
+d2 <- ggplot(fans2, aes(x =  average.radial.slope..degrees., group= as.factor(Kcluster)))+
+        geom_density(alpha = 0.5, fill = "grey")+
+        theme_bw()+
+  labs(x = "Radial Slope (degrees)", y = "Density") + 
+  theme(text = element_text(size = 12)) + annotate(geom = 'text', label = 'D ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -5, size =10)
+```
+
+```{r, echo=FALSE}
+grid.arrange(p6, p4, d1, d2, ncol = 2)
+```
+The plots show a K-means analysis on radial slope, radius, longitude, and latitude variables in fans on Mars data. Panel A (radial slope and radius) shows slight separation in clusters one and four. Panel B (radius and latitude) shows a slight separation of cluster three. Neither plot has any truly distinct clusters formed and neither plot has clusters colored by profile shape. Panels C and D show a kernel density estimate for radius and radial slope. Radius has 4 distinct, non-overlapping clusters while radial slope, while being slightly separated, has much more overlap among clusters. 
+\newpage
+
+```{r, echo=FALSE}
+PCA <- prcomp(fans3, scale. = TRUE)
+PCA.output <- data.frame(Kcluster = kfans$cluster,
+                         radial.profile.shape = fans2$radial.profile.shape, 
+                         PCA$x)
+PC1 <- PCA.output %>% 
+  select(radial.profile.shape, PC1, Kcluster)
+
+PC2 <- PCA.output %>% 
+  select(radial.profile.shape, PC2, Kcluster)
+
+PC3 <- PCA.output %>% 
+  select(radial.profile.shape, PC3, Kcluster)
+```
+
+
+```{r, echo=FALSE}
+g1 <- ggplot(PCA.output, aes(x = PC2, y = PC3, 
+                         shape = as.factor(Kcluster), 
+                         col = radial.profile.shape ))+ geom_point() +
+         theme_bw()  + theme(legend.position = "top", text = element_text(size = 12), legend.text = element_text(size = 10), legend.title = element_text(size = 10), legend.spacing.x = unit(0.01, "cm"), legend.justification  = c(0,0)) + scale_color_manual(values = c("deeppink", "darkgoldenrod1", "cornflowerblue", "darkgreen"), name = "Profile Shape")+ guides(col = "none") + scale_shape_manual(values = c(15,16,17,3), name = "Cluster") + annotate(geom = 'text', label = 'A ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+
+g3 <- ggplot(PCA.output, aes(x = PC1, y = PC4, 
+                         shape = as.factor(Kcluster), 
+                         col = radial.profile.shape ))+ geom_point() +
+         theme_bw()  + theme(legend.position = "top", text = element_text(size = 12), legend.text = element_text(size = 10), legend.title = element_text(size = 10), legend.spacing.x = unit(0.01, "cm"), legend.justification  = c(1,0)) + scale_color_manual(values = c("deeppink", "darkgoldenrod1", "cornflowerblue", "darkgreen"), name = "Profile Shape")+ guides(shape = "none") + scale_shape_manual(values = c(15,16,17,3), name = "Cluster") + annotate(geom = 'text', label = 'B ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+
+```
+
+
+```{r, echo=FALSE}
+rot <- data.frame(abs(round(PCA$rotation,5)))
+
+rot <- rot %>% mutate(factors = c("Longitude", "Latitude", "Radius", "Radial Slope"))
+rot2 <- pivot_longer(rot,-factors, names_to = "Component", values_to = "value" )
+
+f1 <- ggplot(rot2, aes(x=factors, y = value)) + geom_bar(aes(fill = Component), stat = "identity", position = "dodge") + 
+  xlab("Factors") + ylab("Loading Values") +scale_fill_manual(values = c("darkmagenta", "darkorange", "darkseagreen4", "brown3")) + theme(legend.position = "bottom") + annotate(geom = 'text', label = 'C ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+
+```
+
+```{r, echo=FALSE}
+grid.arrange(g1, g3, f1, ncol = 2)
+```
+Panels A and B show clusters on principal component plots. Panel B shows separation of clusters three and four while Panel A only shows separation of cluster 3. Neither plot shows coloring according to cluster. Panel C shows a bar plot of the loading values of all principal components of the data set. 
+
+\newpage
+
+**Interpretation of Results**
+
+Though some of the plots showed separation of clusters, none of the clusters matched the profile shape. Most of the plots showed extremely overlapping clusters with only slight amounts of separation between them. From kernel density estimates, the radius was the only variable that showed a four distinct peaks that did not overlap much. Looking at the loading values, radius was also the only variable that was not the largest contributor to one of the principal components. 
+
+\newpage
+
+Load packages
+```{r, eval=FALSE}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(reshape2)
+```
+Load and clean data, run k-means cluster analysis
+```{r, eval=FALSE}
+fans <- read.csv("/Users/zoeschopick/Fans on Mars.csv")
+
+fans2 <- fans %>% select(apex.longitude..decimal.degrees.,
+                         apex.latitude..decimal.degrees., radius..meters.,
+                         average.radial.slope..degrees.,
+                         radial.profile.shape  ) 
+%>% na.omit()
+
+fans3 <- fans2 %>% select(-radial.profile.shape)
+
+kfans <- kmeans(fans3, centers = 4)
+
+fans2$Kcluster <- kfans$cluster
+```
+
+Create cluster plots
+```{r, eval=FALSE}
+p6 <- ggplot(fans2, aes(x = average.radial.slope..degrees., y = radius..meters., 
+                        shape = as.factor(Kcluster), col = radial.profile.shape))+
+  geom_point() +
+  labs(x = "Radial Slope (degrees)", y = "Radius (m)") +
+  theme_bw()+
+ theme(legend.position = "top", text = element_text(size = 12), 
+       legend.text = element_text(size = 10), legend.title = element_text(size = 10), 
+       legend.spacing.x = unit(0.01, "cm"), legend.justification  = c(0,0)) +
+  scale_color_manual(values = c("deeppink", "darkgoldenrod1", "cornflowerblue", 
+                                "darkgreen"), name = "Profile Shape") +
+  scale_shape_manual(values = c(15,16,17,3), 
+                     name = "Cluster") + 
+  guides(col = "none") + annotate(geom = 'text', 
+                                  label = 'A ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+
+
+p4 <- ggplot(fans2, aes(x = apex.latitude..decimal.degrees. ,
+                        y = radius..meters., shape = as.factor(Kcluster), 
+                        col = radial.profile.shape))+
+  geom_point()+
+  theme_bw() +
+  labs(x = "Latitude", y = "Radius (m)")+
+  theme(legend.position = "top", text = element_text(size = 12), 
+        legend.text = element_text(size = 10), legend.title = element_text(size = 10),
+        legend.spacing.x = unit(0.01, "cm"), legend.justification  = c(1,0))+
+  scale_color_manual(values = c("deeppink", 
+                                "darkgoldenrod1", "cornflowerblue", "darkgreen"),
+                     name = "Profile Shape") +
+  scale_shape_manual(values = c(15,16,17,3),
+                     name = "Cluster") +
+  guides(shape = "none") + annotate(geom = 'text', label = 'B ', 
+                                    x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -3, size =10)
+
+```
+Create density plots
+```{r, eval=FALSE}
+
+d1 <- ggplot(fans2, aes(x =  radius..meters., 
+                        group= as.factor(Kcluster)))+
+        geom_density( alpha = 0.5, fill = "grey")+
+        theme_bw()+
+    labs(x = "Radius (m)", y = "Density") +
+  theme(text = element_text(size = 12)) + 
+  annotate(geom = 'text', 
+                                                   
+           label = 'C ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -5, size =10)
+
+d2 <- ggplot(fans2, aes(x =  average.radial.slope..degrees.,
+                        group= as.factor(Kcluster)))+
+        geom_density(alpha = 0.5, fill = "grey")+
+        theme_bw()+
+  labs(x = "Radial Slope (degrees)", y = "Density") + 
+  theme(text = element_text(size = 12)) + annotate(geom = 'text', 
+                                                   
+                                        label = 'D ', x = Inf, y = -Inf, 
+                 hjust = 1, vjust = -5, size =10)
+```
+```{r, eval=FALSE}
+grid.arrange(p6, p4, d1, d2, ncol = 2)
+```
+
+
+```{r, eval=FALSE}
+PC1 <- PCA.output %>% 
+  select(radial.profile.shape, PC1, Kcluster)
+
+PC2 <- PCA.output %>% 
+  select(radial.profile.shape, PC2, Kcluster)
+
+PC3 <- PCA.output %>% 
+  select(radial.profile.shape, PC3, Kcluster)
+```
+
+Create principal component plots
+```{r, eval=FALSE}
+g1 <- ggplot(PCA.output, aes(x = PC2, y = PC3, 
+                         shape = as.factor(Kcluster), 
+                         col = radial.profile.shape ))+ 
+  geom_point() +
+         theme_bw()  + theme(legend.position = "top", 
+                             text = element_text(size = 12), 
+                             legend.text = element_text(size = 10), 
+                             legend.title = element_text(size = 10),
+                             legend.spacing.x = unit(0.01, "cm"), 
+                             legend.justification  = c(0,0)) + 
+  scale_color_manual(values = c("deeppink", "darkgoldenrod1", 
+                                "cornflowerblue", "darkgreen"), 
+                     name = "Profile Shape")+ guides(col = "none") + 
+  scale_shape_manual(values = c(15,16,17,3), name = "Cluster") + 
+  annotate(geom = 'text', label = 'A ', x = Inf, y = -Inf, 
+                 hjust = 8, vjust = -3, size =10)
+
+g3 <- ggplot(PCA.output, aes(x = PC1, y = PC4, 
+                         shape = as.factor(Kcluster), 
+                         col = radial.profile.shape ))+
+  geom_point() +
+         theme_bw()  + theme(legend.position = "top", 
+                             text = element_text(size = 12), 
+                             legend.text = element_text(size = 10), 
+                             legend.title = element_text(size = 10), 
+                             legend.spacing.x = unit(0.01, "cm"), 
+                             legend.justification  = c(1,0)) + 
+  scale_color_manual(values = c("deeppink", "darkgoldenrod1", 
+                                "cornflowerblue", "darkgreen"), 
+                     name = "Profile Shape")+ guides(shape = "none") +
+  scale_shape_manual(values = c(15,16,17,3), name = "Cluster") + 
+  annotate(geom = 'text', label = 'B ', x = Inf, y = -Inf, 
+                 hjust = 8, vjust = -3, size =10)
+
+```
+
+Finding rotations of variables and creating bar plot
+```{r, eval=FALSE}
+rot <- data.frame(abs(round(PCA$rotation,5)))
+
+rot <- rot %>% mutate(factors = c("Longitude", "Latitude", 
+                                  "Radius", "Radial Slope"))
+rot2 <- pivot_longer(rot,-factors, names_to = "Component", 
+                     values_to = "value" )
+
+f1 <- ggplot(rot2, aes(x=factors, y = value)) + 
+  geom_bar(aes(fill = Component), stat = "identity", 
+           position = "dodge") + 
+  xlab("Factors") + ylab("Loading Values") +
+  scale_fill_manual(values = c("darkmagenta", "darkorange", 
+                               "darkseagreen4", "brown3")) 
++ theme(legend.position = "bottom") + annotate(geom = 'text',
+                                label = 'C ', x = Inf, y = -Inf, 
+                 hjust = 7.5, vjust = -3, size =10)
+
+```
+
+```{r, eval=FALSE}
+grid.arrange(g1, g3, f1, ncol = 2)
+```
